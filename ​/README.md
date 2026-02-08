@@ -1,6 +1,6 @@
 # 🦈 Aura AI: Decentralized Intelligence Layer
 
-![Logo](dashboard/logo.png) ## 🛡️ Problem
+## 🛡️ Problem
 Retail traders lose due to institutional info-monopoly. High-frequency data is too complex, and AI forecasts are often opaque and unverified.
 
 ## 🚀 Solution
