@@ -1,0 +1,70 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+/**
+ * @title AuraAI_Oracle
+ * @dev Децентрализованный слой для фиксации ИИ-прогнозов (Proof of Inference)
+ * Специально для BNB Chain Hackathon "Good Vibes Only"
+ */
+contract AuraCore {
+    address public immutable owner;
+    uint256 public totalInferences;
+
+    struct Inference {
+        string asset;         // Например, "BNB" или "BTC"
+        bytes32 forecastHash; // Хэш прогноза (Llama-3 + CatBoost)
+        uint256 confidence;   // Уверенность модели (0-100)
+        uint256 timestamp;    // Время фиксации
+        bool verified;        // Подтверждена ли точность оракулом
+    }
+
+    // Хранение прогнозов по их уникальному ID
+    mapping(bytes32 => Inference) public inferences;
+    
+    event NewInference(bytes32 indexed queryId, string asset, uint256 confidence);
+    event InferenceVerified(bytes32 indexed queryId, bool success);
+
+    constructor() {
+        owner = msg.sender;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Aura: Unauthorized");
+        _;
+    }
+
+    /**
+     * @dev Фиксация нового ИИ-вывода в блокчейне
+     * @param _asset Тикер актива
+     * @param _forecastHash Хэш данных прогноза
+     * @param _confidence Уверенность системы
+     */
+    function commitInference(
+        string memory _asset, 
+        bytes32 _forecastHash, 
+        uint256 _confidence
+    ) external onlyOwner returns (bytes32) {
+        bytes32 queryId = keccak256(abi.encodePacked(_asset, _forecastHash, block.timestamp));
+        
+        inferences[queryId] = Inference({
+            asset: _asset,
+            forecastHash: _forecastHash,
+            confidence: _confidence,
+            timestamp: block.timestamp,
+            verified: false
+        });
+
+        totalInferences++;
+        emit NewInference(queryId, _asset, _confidence);
+        return queryId;
+    }
+
+    /**
+     * @dev Подтверждение точности прогноза после закрытия сделки
+     */
+    function verifyInference(bytes32 _queryId, bool _success) external onlyOwner {
+        require(inferences[_queryId].timestamp != 0, "Aura: Not found");
+        inferences[_queryId].verified = _success;
+        emit InferenceVerified(_queryId, _success);
+    }
+}
